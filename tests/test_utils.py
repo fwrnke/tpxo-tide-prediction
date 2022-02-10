@@ -65,11 +65,11 @@ def test_nodal(mjd, constituents, expected_nodal_corrections, allclose):
     # python -c "from pyTMD.load_nodal_corrections import load_nodal_corrections; print(load_nodal_corrections(59824, ['m2', 's2', 'k1', 'o1']))"
     assert allclose(nodal(mjd, constituents), expected_nodal_corrections)
 
-def test_infer_minor():
-    times = np.arange(np.datetime64('1989-11-09','D'), np.datetime64('1989-11-21','D'))
-    timesteps = (times - np.datetime64('1992-01-01','s')).astype('float')
-    ncon = 5
-    npts = 20
-    hc = np.empty((ncon, npts), dtype='complex')
+# def test_infer_minor():
+#     times = np.arange(np.datetime64('1989-11-09','D'), np.datetime64('1989-11-21','D'))
+#     timesteps = (times - np.datetime64('1992-01-01','s')).astype('float')
+#     ncon = 5
+#     npts = 20
+#     hc = np.empty((ncon, npts), dtype='complex')
     
     
