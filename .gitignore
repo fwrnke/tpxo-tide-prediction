@@ -1,0 +1,7 @@
+__pycache__
+v5/
+tmp/
+build/
+*.egg-info
+*.nc
+examples/test_track
