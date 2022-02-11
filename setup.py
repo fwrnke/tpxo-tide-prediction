@@ -50,6 +50,7 @@ setuptools.setup(
         'xarray>=0.20.0',
         'scipy>=1.7.0',
     ],
+    tests_require=['pytest', 'pytest-allclose'],
     entry_points={
     'console_scripts': [
         'predict_tide=tpxo_tide_prediction.predict_tide:main',
