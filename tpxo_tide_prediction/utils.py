@@ -98,61 +98,61 @@ def nodal(mjd:float, constit:list):
     cos2n = np.cos(2*omega*rad)
     sin3n = np.sin(3*omega*rad)
     
-    # # arg not needed!
-    # arg = np.empty((53), dtype=np.float64)
-    # arg[0]  = h - pp                    # Sa
-    # arg[1]  = 2*h                       # Ssa
-    # arg[2]  = s - p                     # Mm
-    # arg[3]  = 2*s - 2*h                 # MSf
-    # arg[4]  = 2*s                       # Mf
-    # arg[5]  = 3*s - p                   # Mt
-    # arg[6]  = t1 - 5*s + 3*h + p - 90   # alpha1
-    # arg[7]  = t1 - 4*s + h + 2*p - 90   # 2Q1
-    # arg[8]  = t1 - 4*s + 3*h - 90       # sigma1
-    # arg[9]  = t1 - 3*s + h + p - 90     # q1
-    # arg[10] = t1 - 3*s + 3*h - p - 90   # rho1
-    # arg[11] = t1 - 2*s + h - 90         # o1
-    # arg[12] = t1 - 2*s + 3*h + 90       # tau1
-    # arg[13] = t1 - s + h + 90           # M1
-    # arg[14] = t1 - s + 3*h - p + 90     # chi1
-    # arg[15] = t1 - 2*h + pp - 90        # pi1
-    # arg[16] = t1 - h - 90               # p1
-    # arg[17] = t1 + 90                   # s1
-    # arg[18] = t1 + h + 90               # k1
-    # arg[19] = t1 + 2*h - pp + 90        # psi1
-    # arg[20] = t1 + 3*h + 90             # phi1
-    # arg[21] = t1 + s - h + p + 90       # theta1
-    # arg[22] = t1 + s + h - p + 90       # J1
-    # arg[23] = t1 + 2*s + h + 90         # OO1
-    # arg[24] = t2 - 4*s + 2*h + 2*p      # 2N2
-    # arg[25] = t2 - 4*s + 4*h            # mu2
-    # arg[26] = t2 - 3*s + 2*h + p        # n2
-    # arg[27] = t2 - 3*s + 4*h - p        # nu2
-    # arg[28] = t2 - 2*s + h + pp         # M2a
-    # arg[29] = t2 - 2*s + 2*h            # M2
-    # arg[30] = t2 - 2*s + 3*h - pp       # M2b
-    # arg[31] = t2 - s + p + 180          # lambda2
-    # arg[32] = t2 - s + 2*h - p + 180    # L2
-    # arg[33] = t2 - h + pp               # t2
-    # arg[34] = t2                        # S2
-    # arg[35] = t2 + h - pp + 180         # R2
-    # arg[36] = t2 + 2*h                  # K2
-    # arg[37] = t2 + s + 2*h - pp         # eta2
-    # arg[38] = t2 - 5*s + 4.0*h + p      # MNS2
-    # arg[39] = t2 + 2*s - 2*h            # 2SM2
-    # arg[40] = 1.5*arg[29]               # M3
-    # arg[41] = arg[18] + arg[29]         # MK3
-    # arg[42] = 3*t1                      # S3
-    # arg[43] = arg[26] + arg[29]         # MN4
-    # arg[44] = 2*arg[29]                 # M4
-    # arg[45] = arg[29] + arg[34]         # MS4
-    # arg[46] = arg[29] + arg[36]         # MK4
-    # arg[47] = 4*t1                      # S4
-    # arg[48] = 5*t1                      # S5
-    # arg[49] = 3*arg[29]                 # M6
-    # arg[50] = 3*t2                      # S6
-    # arg[51] = 7.0*t1                    # S7
-    # arg[52] = 4*t2                      # S8    
+    # arg not needed!
+    arg = np.empty((53), dtype=np.float64)
+    arg[0]  = h - pp                    # Sa
+    arg[1]  = 2*h                       # Ssa
+    arg[2]  = s - p                     # Mm
+    arg[3]  = 2*s - 2*h                 # MSf
+    arg[4]  = 2*s                       # Mf
+    arg[5]  = 3*s - p                   # Mt
+    arg[6]  = t1 - 5*s + 3*h + p - 90   # alpha1
+    arg[7]  = t1 - 4*s + h + 2*p - 90   # 2Q1
+    arg[8]  = t1 - 4*s + 3*h - 90       # sigma1
+    arg[9]  = t1 - 3*s + h + p - 90     # q1
+    arg[10] = t1 - 3*s + 3*h - p - 90   # rho1
+    arg[11] = t1 - 2*s + h - 90         # o1
+    arg[12] = t1 - 2*s + 3*h + 90       # tau1
+    arg[13] = t1 - s + h + 90           # M1
+    arg[14] = t1 - s + 3*h - p + 90     # chi1
+    arg[15] = t1 - 2*h + pp - 90        # pi1
+    arg[16] = t1 - h - 90               # p1
+    arg[17] = t1 + 90                   # s1
+    arg[18] = t1 + h + 90               # k1
+    arg[19] = t1 + 2*h - pp + 90        # psi1
+    arg[20] = t1 + 3*h + 90             # phi1
+    arg[21] = t1 + s - h + p + 90       # theta1
+    arg[22] = t1 + s + h - p + 90       # J1
+    arg[23] = t1 + 2*s + h + 90         # OO1
+    arg[24] = t2 - 4*s + 2*h + 2*p      # 2N2
+    arg[25] = t2 - 4*s + 4*h            # mu2
+    arg[26] = t2 - 3*s + 2*h + p        # n2
+    arg[27] = t2 - 3*s + 4*h - p        # nu2
+    arg[28] = t2 - 2*s + h + pp         # M2a
+    arg[29] = t2 - 2*s + 2*h            # M2
+    arg[30] = t2 - 2*s + 3*h - pp       # M2b
+    arg[31] = t2 - s + p + 180          # lambda2
+    arg[32] = t2 - s + 2*h - p + 180    # L2
+    arg[33] = t2 - h + pp               # t2
+    arg[34] = t2                        # S2
+    arg[35] = t2 + h - pp + 180         # R2
+    arg[36] = t2 + 2*h                  # K2
+    arg[37] = t2 + s + 2*h - pp         # eta2
+    arg[38] = t2 - 5*s + 4.0*h + p      # MNS2
+    arg[39] = t2 + 2*s - 2*h            # 2SM2
+    arg[40] = 1.5*arg[29]               # M3
+    arg[41] = arg[18] + arg[29]         # MK3
+    arg[42] = 3*t1                      # S3
+    arg[43] = arg[26] + arg[29]         # MN4
+    arg[44] = 2*arg[29]                 # M4
+    arg[45] = arg[29] + arg[34]         # MS4
+    arg[46] = arg[29] + arg[36]         # MK4
+    arg[47] = 4*t1                      # S4
+    arg[48] = 5*t1                      # S5
+    arg[49] = 3*arg[29]                 # M6
+    arg[50] = 3*t2                      # S6
+    arg[51] = 7.0*t1                    # S7
+    arg[52] = 4*t2                      # S8    
     
     f = np.empty((53), dtype=np.float64)
     f[0]  = 1                                     # Sa
@@ -446,10 +446,14 @@ def infer_minor(z, constituents:list, mjd:float, timesteps):
 
 def longitude_to_360(lon):
     """ Convert longitude (DD) to 0 to 360 degree range. """
+    if isinstance(lon, np.ndarray):
+        lon = np.atleast_1d(lon)
     return lon % 360
 
 def longitude_to_180(lon):
     """ Convert longitude (DD) to -180 to 180 degree range. """
+    if isinstance(lon, np.ndarray):
+        lon = np.atleast_1d(lon)
     return ((lon + 180) % 360) - 180
 
 
@@ -588,6 +592,9 @@ def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=10, method='cu
         at each lat/lon position.
 
     """
+    lat = np.atleast_1d(lat)
+    lon = np.atleast_1d(lon)
+        
     # convert longitude from -180/180 to 0/360 range
     lon = longitude_to_360(lon)
     
