@@ -457,7 +457,7 @@ def longitude_to_180(lon):
     return ((lon + 180) % 360) - 180
 
 
-def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset=10):
+def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset=3):
     """
     Return coordinate slices that match existing coordinate locations in xr.Dataset.
     Slices are determined using input coordinate arrays and offset (# of nodes).
@@ -476,28 +476,54 @@ def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset=1
         Name of netCDF coordinate corresponding to longitude. The default is 'lon_z'.
     offset : int, optional
         Offset value (# of nodes in input dataset) used to extend coordinate boundaries. 
-        The default is 10.
+        The default is 3.
 
     Returns
     -------
-    slices
-        Latitude and longitude coordinate slices.
+    lat_subset : slice
+        Latitude coordinates slice.
+    lon_subset : np.ndarray
+        Longitude index array of subset region (aware of prime meridian crossings!).
 
     """
     # get min/max from coords
     lat_min, lat_max = lat.min(), lat.max()
-    lon_min, lon_max = lon.min(), lon.max()
+        
+    # === LONGITUDE ===
+    # split data along prime meridian (zero longitude)
+    mask_east = np.nonzero(lon < 180)
+    mask_west = np.nonzero(lon > 180)
     
-    lat_min_pad = float(ds[coords_lat][bisect.bisect(ds[coords_lat], lat_min) - offset].values)
-    lon_min_pad = float(ds[coords_lon][bisect.bisect(ds[coords_lon], lon_min) - offset].values)
+    # indices east/west of prime meridian
+    idx_east = np.nonzero(
+        (ds[coords_lon].data > lon[mask_east].min()) & 
+        (ds[coords_lon].data < lon[mask_east].max()))[0]
+    idx_west = np.nonzero(
+        (ds[coords_lon].data > lon[mask_west].min()) & 
+        (ds[coords_lon].data < lon[mask_west].max()))[0]
     
+    # pad subset longitude extent using offset
+    idx_max = ds[coords_lon].size - 1
+    pad_east_min = np.arange(idx_east[0] - offset, idx_east[0]) \
+        if idx_east[0] - offset >= 0 else np.arange(0, idx_east[0])
+    pad_east_max = np.arange(idx_east[-1] + 1, idx_east[-1] + offset + 1) \
+        if idx_east[-1] + offset <= idx_max else np.arange(idx_east[-1] + 1, idx_max)
+    idx_east_pad = np.hstack((pad_east_min, idx_east, pad_east_max))
+    
+    pad_west_min = np.arange(idx_west[0] - offset, idx_west[0]) \
+        if idx_west[0] - offset >= 0 else np.arange(0, idx_west[0])
+    pad_west_max = np.arange(idx_west[-1] + 1, idx_west[-1] + offset + 1) \
+        if idx_west[-1] + offset <= idx_max else np.arange(idx_west[-1] + 1, idx_max + 1)
+    idx_west_pad = np.hstack((pad_west_min, idx_west, pad_west_max))
+    
+    # === LATITUDE ===
+    lat_min_pad = float(ds[coords_lat][bisect.bisect(ds[coords_lat], lat_min) - offset].values)    
     lat_max_pad = float(ds[coords_lat][bisect.bisect(ds[coords_lat], lat_max) + offset].values)
-    lon_max_pad = float(ds[coords_lon][bisect.bisect(ds[coords_lon], lon_max) + offset].values)
 
-    return slice(lat_min_pad, lat_max_pad), slice(lon_min_pad, lon_max_pad)
+    return slice(lat_min_pad, lat_max_pad), np.hstack((idx_east_pad, idx_west_pad))
 
 
-def read_grd_netCDF(path, lat, lon):  #TODO: update!
+def read_grd_netCDF(path, lat, lon, offset:int=3):  #TODO: update!
     """
     Read bathymetry at provided coordinates (lat, lon) from grid netCDF.
 
@@ -542,26 +568,26 @@ def read_grd_netCDF(path, lat, lon):  #TODO: update!
     grd_u = grd_u.swap_dims({'nx':'lon_u', 'ny':'lat_u'})
     grd_v = grd_v.swap_dims({'nx':'lon_v', 'ny':'lat_v'})
     
-    lat_slice, lon_slice = subset_region(grd_z, lat, lon, offset=10)
+    lat_slice, lon_slice = subset_region(grd_z, lat, lon, offset=offset)
     
     # sample grid at coordinate locations using cubic interpolation
     # using individual slices for h, u, v because their coordinate grids differ!
-    lat_slice, lon_slice = subset_region(grd_z, lat, lon, offset=10)
+    lat_slice, lon_slice = subset_region(grd_z, lat, lon, offset=offset)
     # (1) select subset of full grid based on slices
     # (2) interpolate values within subset
     # (3) sample interpolated grid at coordinate positions
     hz_interp = grd_z.sel(lon_z=lon_slice, lat_z=lat_slice).interp(lon_z=lon, lat_z=lat, method='cubic').sel(lon_z=lon_da, lat_z=lat_da)
     
-    lat_slice, lon_slice = subset_region(grd_u, lat, lon, offset=10, coords_lat='lat_u', coords_lon='lon_u')
+    lat_slice, lon_slice = subset_region(grd_u, lat, lon, offset=offset, coords_lat='lat_u', coords_lon='lon_u')
     hu_interp = grd_u.sel(lon_u=lon_slice, lat_u=lat_slice).interp(lon_u=lon, lat_u=lat, method='cubic').sel(lon_u=lon_da, lat_u=lat_da)
     
-    lat_slice, lon_slice = subset_region(grd_v, lat, lon, offset=10, coords_lat='lat_v', coords_lon='lon_v')
+    lat_slice, lon_slice = subset_region(grd_v, lat, lon, offset=offset, coords_lat='lat_v', coords_lon='lon_v')
     hv_interp = grd_v.sel(lon_v=lon_slice, lat_v=lat_slice).interp(lon_v=lon, lat_v=lat, method='cubic').sel(lon_v=lon_da, lat_v=lat_da)
     
     return hz_interp, hu_interp, hv_interp
     
 
-def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=10, method='cubic'):
+def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=3, method='cubic'):
     """
     Read and sample tidal elevation constituent files at given coordinates.
     A subset of the input data is selected using coordinate extent increased by
@@ -618,11 +644,11 @@ def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=10, method='cu
         check = [con in p for p in paths]
         if any(check):
             path = paths[check.index(True)]
-            print(f'[INFO]    Loading elevation data for < {con} >')
+            print(f'[INFO]    Loading tidal elevation data for constituent < {con} >')
             #print(path)
             ds = xr.open_dataset(path)
             ds = ds.drop_vars('con').swap_dims({'nx':'lon_z', 'ny':'lat_z'})
-            var_names = list(ds.data_vars) #list(ds.var.keys())
+            var_names = list(ds.data_vars)
             ds = ds.rename_vars(dict(zip(var_names, [f'{con}_{v}' for v in var_names])))
             
             ds_cons.append(ds)
@@ -633,13 +659,9 @@ def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=10, method='cu
     h.attrs['constituents'] = cons_loaded
       
     # sample constituents at coordinate locations using cubic interpolation 
-    lat_slice, lon_slice = subset_region(h, lat, lon, offset=offset)
-    # h_not_interp = h.sel(lon_z=lon_slice, lat_z=lat_slice)
-    h_interp = h.sel(
-        lon_z=lon_slice, lat_z=lat_slice
-        ).interp(
-            lon_z=lon_uniq, lat_z=lat_uniq, method=method
-            ).sel(lon_z=lon_da, lat_z=lat_da)
+    lat_subset, lon_subset = subset_region(h, lat, lon, offset=offset)
+    h_interp = h.sel(lat_z=lat_subset).isel(lon_z=lon_subset).interp(
+                lon_z=lon_uniq, lat_z=lat_uniq, method=method).sel(lon_z=lon_da, lat_z=lat_da)
     
     if len(constituents) != len(cons_loaded):
         print('[WARNING]    Could not find constituents: ', 
