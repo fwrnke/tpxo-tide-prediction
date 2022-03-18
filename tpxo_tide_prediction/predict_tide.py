@@ -1,8 +1,8 @@
 """
 Compute tidal corrections for user-specified timestamps and geographical positions.
-Using TPXO9-atlas-v4/v5 as tidal model with 1/30 degree resolution fully global solution, 
-obtained by combining 1/6 degree base global solution TPXO9.v1 and 
-thirty 1/30 degree resolution local solutions for all coastal areas, 
+Using TPXO9-atlas-v4/v5 as tidal model with 1/30 degree resolution fully global solution,
+obtained by combining 1/6 degree base global solution TPXO9.v1 and
+thirty 1/30 degree resolution local solutions for all coastal areas,
 including Arctic and Antarctic.
 The model is available from: https://www.tpxo.net/global/tpxo9-atlas
 
@@ -10,11 +10,11 @@ This code is based on the original OTPS software package written in Fortran-90
 and developed by Gary Egbert & Svetlana Erofeeva from the Oregon State University.
 
 Further inspirations are taken from:
-    pyTMD  - Python-based tidal prediction software 
+    pyTMD  - Python-based tidal prediction software
         by T. C. Sutterley, https://pytmd.readthedocs.io/en/latest/
-    OtisTidalPrediction 
+    OtisTidalPrediction
         by jklymak, https://github.com/jklymak/OtisTidalPrediction
-    tidal-prediction-python 
+    tidal-prediction-python
         by Jesper Baasch-Larsen, https://gitlab.com/jblarsen/tidal-prediction-python
 
 @author: fwrnke
@@ -29,21 +29,27 @@ import numpy as np
 
 from .tidal_constituents import (
     CONST_ID,
-    OMEGA_d, 
+    OMEGA_d,
     PHASE_mkB
     )
 from .utils import (
-    read_h_netCDFs, 
-    nodal, 
+    read_h_netCDFs,
+    nodal,
     infer_minor
     )
+
+__all__ = [
+    'tide_predict',
+    'read_parameter_file',
+    'write_tides',
+    ]
 
 #%%
 def define_input_args():
     parser = argparse.ArgumentParser(
         description='Compute tidal corrections for user-specified timestamps and geographical positions')
     parser.add_argument('model_dir', type=str, help='Input directory of tidal model files.')
-    parser.add_argument('params_file', type=str, 
+    parser.add_argument('params_file', type=str,
                         help='Input file with columns [LAT,LON,UTC TIME (YYYY-MM-DDThh:mm:ss)].\
                               Could be provided as [LAT,LON] if "--time" is set or \
                               as [UTC TIME] if "--lat" and "--lon" are set.')
@@ -58,7 +64,7 @@ def define_input_args():
                         help='Constant latitude for each timestep in parameter file. Expecting only TIME column.')
     parser.add_argument('--lon', type=float,
                         help='Constant longitude for each timestep in parameter file. Expecting only TIME column.')
-    parser.add_argument('--time', '-t', nargs='*', #type=str, 
+    parser.add_argument('--time', '-t', nargs='*', #type=str,
                         help='Constant time for every coordinate position (YYYY-MM-DDThh:mm:ss)\
                               OR start and end time [START END] \
                               OR start and end time with stepsize [START END STEP] \
@@ -74,10 +80,11 @@ def define_input_args():
     return parser
 
 
-def tide_predict(model_dir, lat, lon, times, 
-                 constituents:list=['m2','s2','n2','k2','k1','o1','p1','q1'], 
-                 correct_minor=True, 
-                 method='cubic'):
+def tide_predict(model_dir, lat, lon, times,
+                 constituents:list=['m2','s2','n2','k2','k1','o1','p1','q1'],
+                 correct_minor=True,
+                 method='linear',
+                 mode='full'):
     """
     Predict tides for given timestamps and geographical positions.
 
@@ -94,9 +101,11 @@ def tide_predict(model_dir, lat, lon, times,
     constituents : list, optional
         Tidal constituents to use for prediction.
     correct_minor : bool, optional
-        Correct tide for minor constituents. The default is True.
+        Correct tide for minor constituents (default: True).
     method : str
-        Interpolation method. Choose from 'nearest', 'linear', or 'cubic'.
+        Interpolation method. Choose from 'nearest' or 'linear'.
+    mode : str
+        Either `full` tide matrix or only tides along `track`.
 
     Returns
     -------
@@ -108,7 +117,7 @@ def tide_predict(model_dir, lat, lon, times,
     npts = lon.size
     # get number of timesteps
     ntimes = times.size
-    
+
     #--- prepare times
     # calc modified julian day (MJD) since 1992-01-01
     if isinstance(times, np.ndarray):
@@ -119,13 +128,12 @@ def tide_predict(model_dir, lat, lon, times,
         raise ValueError('Type of input times not known. Please use np.datetime64 format!')
     mjd = (time_init.astype('datetime64[D]') - np.datetime64('1992-01-01', 'D')).astype('float') + 48622.0
     # calc timesteps in seconds since 1992-01-01
-    timesteps = (times - np.datetime64('1992-01-01','s')).astype('float') 
-    
-    
+    timesteps = (times - np.datetime64('1992-01-01','s')).astype('float')
+
     #--- prepare input tidal constituents
     constituents = [c.lower() for c in constituents if c.lower() in CONST_ID]
     ncon = len(constituents)
-    
+
     # get index of each constituent for selecting constants
     const_idx = []
     for constid in constituents:
@@ -133,42 +141,45 @@ def tide_predict(model_dir, lat, lon, times,
             const_idx.append(CONST_ID.index(constid.lower()))
         except ValueError as err:
             print('[WARNING]    ', err)
-    
-    
+
     #--- read input tidal constituents
     # read OTIS tidal elevation files
     paths_h = glob.glob(model_dir + '/h_*.nc')
     h = read_h_netCDFs(paths_h, lat, lon, constituents, method=method)
-    
+
     # build (complex) harmonic constant array from netCDFs
     hc = np.empty((ncon, npts), dtype='complex')
     for k, c in enumerate(h.attrs['constituents']):
         hc[k,:] = (h[f'{c}_hRe'].data + h[f'{c}_hIm'].data * 1.0j) / 1000   # convert mm to m
-    
 
     # compute nodal corrections
     pf, pu = nodal(mjd, constituents)
-    
-    
+
     #--- predict tides
-    # init output array
-    h_pred = np.zeros((ntimes, npts))
-    # loop over each constituent for every (coordinate) postition  
+    try:
+        # init output array
+        h_pred = np.zeros((1, npts)) if mode == 'track' else np.zeros((ntimes, npts))
+    except MemoryError as error:
+        raise MemoryError(str(error) + '. Please use mode="track" or split input dataset.')
+    
+    # loop over each constituent for every (coordinate) postition
     for nn in range(ncon):
         # get index of constituent to get corresponding `OMEGA_d` and `PHASE_mkB` value
         j = const_idx[nn]
         # coordinate position loop for single constituent
         for ii in range(npts):
-            # sum over all tidal constituents 
-            h_pred[:,ii] += pf[nn] * hc.real[nn,ii] * np.cos(OMEGA_d[j] * timesteps + PHASE_mkB[j] + pu[nn]) - \
- 	            pf[nn] * hc.imag[nn,ii] * np.sin(OMEGA_d[j] * timesteps + PHASE_mkB[j] + pu[nn])  
-    
+            mask = ii if mode == 'track' else None
+            # sum over all tidal constituents
+            h_pred[:,ii] = h_pred[:,ii] + pf[nn] * hc.real[nn,ii] * \
+                np.cos(OMEGA_d[j] * timesteps[mask].squeeze() + PHASE_mkB[j] + pu[nn]) - \
+ 	            pf[nn] * hc.imag[nn,ii] * np.sin(OMEGA_d[j] * timesteps[mask].squeeze() + PHASE_mkB[j] + pu[nn])
+                 
     # infer corrections for minor constituents
     if correct_minor:
         dh = infer_minor(hc, constituents, mjd, timesteps)
         h_pred += dh
-    
-    return h_pred
+
+    return h_pred.squeeze()
 
 
 def read_parameter_file(params_file, lat=None, lon=None, times=None):
@@ -206,7 +217,7 @@ def read_parameter_file(params_file, lat=None, lon=None, times=None):
         for line in f:
             line = line.rstrip().strip().split(',')
             ncols = len(line)
-            
+
             if ncols == 1:
                 times_list.append(np.datetime64(line[0]))
             elif ncols == 2:
@@ -216,7 +227,7 @@ def read_parameter_file(params_file, lat=None, lon=None, times=None):
                 lat_list.append(float(line[0]))
                 lon_list.append(float(line[1]))
                 times_list.append(np.datetime64(line[2]))
-    
+
     # command line parameter supersedes parameter file input
     if ((lat is not None) and (lon is not None)) or \
         ((len(lat_list) == 0) and (len(lat_list) == 0) and \
@@ -228,15 +239,15 @@ def read_parameter_file(params_file, lat=None, lon=None, times=None):
         lon = np.asarray(lon_list)
     else:
         raise ValueError('No LAT and LON found in parameter files and no coordinates provided. Check your inputs!')
-    
+
     # check if single postion was provided
     lat_uniq = np.unique(lat)
     lon_uniq = np.unique(lon)
     if lat_uniq.size == 1 and lon_uniq.size == 1:
         lat = lat_uniq
-        lon = lon_uniq    
+        lon = lon_uniq
     assert lat.size == lon.size, 'Input `lat` and `lon` arrays must have identical sizes and shapes!'
-    
+
     # command line parameter supersedes parameter file input
     if (times is not None) or (len(times_list) == 0 and times is not None):
         # check if times is iterable and has more than 1 element
@@ -251,27 +262,27 @@ def read_parameter_file(params_file, lat=None, lon=None, times=None):
         else:
             # single time --> constant time for every data point
             times = np.array([np.datetime64(times)])
-    elif len(times_list) > 1: 
+    elif len(times_list) > 1:
         times = np.asarray(times_list)
     else:
         raise ValueError('No times found in parameter files and no constant time provided. Check your inputs!')
-    
+
     # filter for unique time values (e.g. when provided constant time in parameter file)
     times_uniq = np.unique(times)
     if times_uniq.size == 1:
         times = times_uniq
-    
+
     return lat, lon, times
 
 
-def write_tides(tide, 
-                mode, 
-                output_file=None, 
-                basepath=None, 
-                basename=None, 
-                lat=None, 
-                lon=None, 
-                times=None, 
+def write_tides(tide,
+                mode,
+                output_file=None,
+                basepath=None,
+                basename=None,
+                lat=None,
+                lon=None,
+                times=None,
                 export_params=False):
     """
     Write predicted tides to text file.
@@ -283,7 +294,7 @@ def write_tides(tide,
     mode : str
         Output mode, eithter 'full' (complete array) or 'track' (only along line).
     output_file : str, None
-        Path of output file if provided. 
+        Path of output file if provided.
         Either `output_file` or `basepath` and `basename` must be provided.
     basepath : str, None
         Directory of parameter file.
@@ -302,10 +313,11 @@ def write_tides(tide,
 
     """
     prefix = np.datetime_as_string(np.datetime64('today')).replace(':','')
-    
-    nrows, ncols = tide.shape
+
+
 
     if mode == 'full':
+        nrows, ncols = tide.shape
         output_file = output_file if output_file is not None else os.path.join(basepath, f'{prefix}_{basename}_tides.txt')
         header = ','.join([f'pos{i+1}_m' for i in range(ncols)])
         
@@ -329,9 +341,9 @@ def write_tides(tide,
             data = tide
         np.savetxt(output_file, data, fmt=fmt, delimiter=',', newline='\n', header=header, comments='')
     elif mode == 'track':
+        nrows = tide.size
         output_file = output_file if output_file is not None else os.path.join(basepath, f'{prefix}_{basename}_tides-along-track.txt')
-        idx_track = np.diag_indices(nrows)
-                 
+
         if export_params and all([var is not None for var in [lat, lon, times]]):
             header = 'lat,lon,timestamp,tide_m'
             fmt = '%.6f,%.6f,%s,%.6f'
@@ -339,50 +351,48 @@ def write_tides(tide,
             data[:,0] = lat
             data[:,1] = lon
             data[:,2] = np.datetime_as_string(times)
-            data[:,3] = tide[idx_track]
+            data[:,3] = tide#[idx_track]
         elif not export_params:
             header = 'tide_m'
             fmt = '%.6f'
-            data = tide[idx_track]
+            data = tide#[idx_track]
         np.savetxt(output_file, data, fmt=fmt, delimiter=',', newline='\n', header=header, comments='')
-        
+
+
 def main(input_args=None):
     parser = define_input_args()
     args = parser.parse_args(input_args)
-    
+
     basepath, filename = os.path.split(args.params_file)
     basename, suffix = os.path.splitext(filename)
-    
+
     # read inputs from parameter file
     lat, lon, times = read_parameter_file(args.params_file, args.lat, args.lon, args.time)
-    
+
     if args.mode == 'track' and not (lat.size == lon.size == times.size):
         raise ValueError('For mode `track` the input parameter `lat`, `lon` and `times` must have the same size!')
-    
+
     #  predict tides at given times and positions
-    tide = tide_predict(args.model_dir, lat, lon, times, args.constituents, 
-                        correct_minor=args.correct_minor, method='cubic')
-    
+    tide = tide_predict(args.model_dir, lat, lon, times, args.constituents,
+                        correct_minor=args.correct_minor, method='linear', mode=args.mode)
+
     # save predicted tides to output file
     write_tides(tide, args.mode, args.output_file, basepath, basename, lat, lon, times, args.export_params)
 
-#%% 
-if __name__ == '__main__':         
+#%%
+if __name__ == '__main__':
     # -------------------------------------------------------------------------
     #                           INPUT PARAMETER
     # -------------------------------------------------------------------------
     cmd_str = '''../data
-        ../examples/test_lat_lon_time.txt
-        --constituents m2 s2 n2 k2 k1 o1 p1 q1
+        ../examples/params_tracks_dateline.txt
+        --constituents m2 s2 n2 k2 k1 o1 p1 q1 m4 ms4 mn4 mm mf
         --correct_minor
-        --output_file ../tmp/test.txt
-        --mode full
+        --mode track
         --export_params
-        --lat -44.12345
-        --lon 222.98765
         '''.split()
         # --lat -44.12345
         # --lon 175.98765
-   
-    main()
-    
+        # --output_file ../tmp/tracks_dateline.out
+
+    main(cmd_str)
