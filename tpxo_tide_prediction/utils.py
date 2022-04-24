@@ -11,6 +11,15 @@ import xarray as xr
 
 from .tidal_constituents import CONST_ID
 
+__all__ = [
+    'astrol',
+    'nodal',
+    'infer_minor',
+    'longitude_to_360',
+    'longitude_to_180',
+    'subset_region',
+    'read_h_netCDFs',
+    ]
 
 def astrol(mjd):
     """
@@ -19,29 +28,29 @@ def astrol(mjd):
     These formulae are for the period 1990 - 2010, and were derived
     by David Cartwright (personal comm., Nov. 1990).
     mjd is UTC in decimal MJD.
-    
+
     All longitudes returned in degrees.
     R. D. Ray    Dec. 1990
-    
+
     Non-vectorized version.
-    
+
     """
     circle = 360.0
-    
+
     T = mjd - 51544.4993
-    
+
     # mean longitude of moon
     s = 218.3164 + 13.17639648 * T
-    
+
     # mean longitude of sun
     h = 280.4661 +  0.98564736 * T
-    
+
     # mean longitude of lunar perigee
     p =  83.3535 +  0.11140353 * T
-    
+
     # mean longitude of ascending lunar node
     N = 125.0445 -  0.05295377 * T
-    
+
     s = np.mod(s, circle)
     h = np.mod(h, circle)
     p = np.mod(p, circle)
@@ -67,37 +76,37 @@ def nodal(mjd:float, constit:list):
         Nodal corrections for the constituents.
 
     """
-    # index_labels = ['m2', 's2', 'k1', 'o1', 'n2', 'p1', 'k2', 'q1', '2n2', 'mu2', 
-    #                 'nu2', 'l2', 't2', 'j1', 'm1', 'oo1', 'rho1', 'mf', 'mm', 'ssa', 
+    # index_labels = ['m2', 's2', 'k1', 'o1', 'n2', 'p1', 'k2', 'q1', '2n2', 'mu2',
+    #                 'nu2', 'l2', 't2', 'j1', 'm1', 'oo1', 'rho1', 'mf', 'mm', 'ssa',
     #                 'm4', 'ms4', 'mn4', 'mk3', 's6', '2sm2']
-    # index = [29, 34, 18, 11, 26, 16, 36,  9, 24, 25, 
+    # index = [29, 34, 18, 11, 26, 16, 36,  9, 24, 25,
     #          27, 32, 33, 22, 13, 23, 10,  4,  2,  1,
     #          44, 45, 43, 49, 41, 50, 39]
-    
+
     pp = 282.94     # solar perigee at epoch 2000
     rad = math.pi/180
-    
+
     hour = (mjd - int(mjd)) * 24.0
     t1 = 15.0 * hour
     t2 = 30.0 * hour
-    
+
     # get the basic astronomical mean longitudes
     s, h, p, omega = astrol(mjd)
-    
+
     # list of all constituents available for this function
-    cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1', 
-              'q1', 'rho1', 'o1', 'tau1', 'm1', 'chi1', 'pi1', 'p1', 's1', 'k1', 
-              'psi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'n2', 'nu2', 
-              'm2a', 'm2', 'm2b', 'lambda2', 'l2', 't2', 's2', 'r2', 'k2', 'eta2', 
-              'mns2', '2sm2', 'm3', 'mk3', 's3', 'mn4', 'm4', 'ms4', 'mk4', 's4', 
+    cindex = ['sa', 'ssa', 'mm', 'msf', 'mf', 'mt', 'alpha1', '2q1', 'sigma1',
+              'q1', 'rho1', 'o1', 'tau1', 'm1', 'chi1', 'pi1', 'p1', 's1', 'k1',
+              'psi1', 'phi1', 'theta1', 'j1', 'oo1', '2n2', 'mu2', 'n2', 'nu2',
+              'm2a', 'm2', 'm2b', 'lambda2', 'l2', 't2', 's2', 'r2', 'k2', 'eta2',
+              'mns2', '2sm2', 'm3', 'mk3', 's3', 'mn4', 'm4', 'ms4', 'mk4', 's4',
               's5', 'm6', 's6', 's7', 's8']
-    
+
     sinn = np.sin(omega*rad)
     cosn = np.cos(omega*rad)
     sin2n = np.sin(2*omega*rad)
     cos2n = np.cos(2*omega*rad)
     sin3n = np.sin(3*omega*rad)
-    
+
     # arg not needed!
     arg = np.empty((53), dtype=np.float64)
     arg[0]  = h - pp                    # Sa
@@ -152,8 +161,8 @@ def nodal(mjd:float, constit:list):
     arg[49] = 3*arg[29]                 # M6
     arg[50] = 3*t2                      # S6
     arg[51] = 7.0*t1                    # S7
-    arg[52] = 4*t2                      # S8    
-    
+    arg[52] = 4*t2                      # S8
+
     f = np.empty((53), dtype=np.float64)
     f[0]  = 1                                     # Sa
     f[1]  = 1                                     # Ssa
@@ -212,7 +221,7 @@ def nodal(mjd:float, constit:list):
     f[50] = 1                                     # S6
     f[51] = 1                                     # S7
     f[52] = 1                                     # S8
-    
+
     u = np.empty((53), dtype=np.float64)
     u[ 0] = 0                                    # Sa
     u[ 1] = 0                                    # Ssa
@@ -267,7 +276,7 @@ def nodal(mjd:float, constit:list):
     u[50] = 0                                    # S6
     u[51] = 0                                    # S7
     u[52] = 0                                    # S8
-    
+
     # filter input constituents based on list of available ones
     constit = [c for c in constit if c.lower() in cindex]
     # get number of constituents to include
@@ -275,7 +284,7 @@ def nodal(mjd:float, constit:list):
     # init output arrays
     pu = np.zeros((nconstit,1))
     pf = np.ones((nconstit,1))
-    
+
     # add nodal corrections for tidal constituents from input list
     for i, cons in enumerate(constit):
         if cons.lower() in CONST_ID:
@@ -285,9 +294,9 @@ def nodal(mjd:float, constit:list):
             pu[i,:] = u[ii] * rad
         else:
             print(f'[WARNING]   nodal(): < {cons.lower()} > not part of primary tidal constituents!')
-    
+
     return pf, pu
-    
+
 
 def infer_minor(z, constituents:list, mjd:float, timesteps):
     """
@@ -315,7 +324,7 @@ def infer_minor(z, constituents:list, mjd:float, timesteps):
     PP = 282.8
     cid8 = ['q1','o1','p1','k1','n2','m2','s2','k2']
     ncid8 = len(cid8)
-    
+
     # number of constituents & number of points (locations)
     nc, npts = z.shape
     # number of timesteps
@@ -324,7 +333,7 @@ def infer_minor(z, constituents:list, mjd:float, timesteps):
     n = nt if ((npts == 1) & (nt > 1)) else npts
     # init output array
     dh = np.zeros((n))
-    
+
     # re-order constituents to correspond to cid8
     ncon = len(constituents)
     z8 = np.zeros((ncid8, npts), dtype='complex')
@@ -338,13 +347,13 @@ def infer_minor(z, constituents:list, mjd:float, timesteps):
 
     if ni < 6:
         raise ValueError('Not enough constituents for inference!')
-    
+
     # list of minor constituents
     minor = ['2q1','sigma1','rho1','m12','m11','chi1','pi1','phi1','theta1',
              'j1','oo1','2n2','mu2','nu2','lambda2','l2','l2','t2']
     # only add minor constituents that are not on the list of major values
     minor_indices = [i for i,m in enumerate(minor) if m not in constituents]
-    
+
     # relationship between major and minor constituent amplitude and phase
     zmin = np.empty((18, n), dtype='complex')
     zmin[0]  = 0.263 * z8[0] - 0.0252 * z8[1]    # 2Q1
@@ -365,14 +374,14 @@ def infer_minor(z, constituents:list, mjd:float, timesteps):
     zmin[15] = 0.0131 * z8[5] + 0.0326 * z8[6]   # L2 +
     zmin[16] = 0.0033 * z8[5] + 0.0082 * z8[6]   # L2 +
     zmin[17] = 0.0585 * z8[6]                    # t2 +
-    
+
     hour = (mjd - int(mjd)) * 24.0
     t1 = 15.0 * hour
     t2 = 30.0 * hour
-    
+
     # get the basic astronomical mean longitudes
     S, H, P, omega = astrol(mjd)
-    
+
     # determine equilibrium tidal arguments
     arg = np.empty((18, n), dtype=np.float64)
     arg[0,:] = t1 - 4. * S + H + 2. * P - 90.  # 2Q1
@@ -399,7 +408,7 @@ def infer_minor(z, constituents:list, mjd:float, timesteps):
     cosn = np.cos(omega * rad)
     sin2n = np.sin(2. * omega * rad)
     cos2n = np.cos(2. * omega * rad)
-    
+
     # init f
     f = np.ones((18, n), dtype=np.float64)
     f[0,:] = np.sqrt((1.0 + 0.189*cosn - 0.0058*cos2n)**2 + (0.189*sinn - 0.0058*sin2n)**2)
@@ -415,7 +424,7 @@ def infer_minor(z, constituents:list, mjd:float, timesteps):
     f[13,:] = f[11]
     f[15,:] = f[11]
     f[16,:] = np.sqrt((1.0 + 0.441 * cosn)**2 + (0.441 * sinn)**2)
-    
+
     # init u
     u = np.zeros((18, n), dtype=np.float64)
     u[0,:] = np.arctan2(0.189*sinn - 0.0058*sin2n, 1.0 + 0.189*cosn - 0.0058*sin2n)/rad
@@ -431,17 +440,17 @@ def infer_minor(z, constituents:list, mjd:float, timesteps):
     u[13,:] = u[11]
     u[15,:] = u[11]
     u[16,:] = np.arctan2(-0.441 * sinn, 1.0 + 0.441 * cosn) / rad
-    
+
     # compute sum of minor tidal constituents
     for k in minor_indices:
-        th = (arg[k,:] + u[k,:]) * rad 
+        th = (arg[k,:] + u[k,:]) * rad
         dh += zmin.real[k,:] * f[k,:] * np.cos(th) - zmin.imag[k,:] * f[k,:] * np.sin(th)
-    
+
     # reshape array to fit input "z" and allow for numpy's broadcasting when adding
     # case: timeseries but single position --> shape: (n, 1)
     # case: timeseries AND multiple positions --> shape: (1, 20)
     dh = dh.reshape((-1,z.shape[-1]))
-    
+
     return dh
 
 def longitude_to_360(lon):
@@ -475,7 +484,7 @@ def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset=3
     coords_lon : str, optional
         Name of netCDF coordinate corresponding to longitude. The default is 'lon_z'.
     offset : int, optional
-        Offset value (# of nodes in input dataset) used to extend coordinate boundaries. 
+        Offset value (# of nodes in input dataset) used to extend coordinate boundaries.
         The default is 3.
 
     Returns
@@ -488,39 +497,71 @@ def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset=3
     """
     # get min/max from coords
     lat_min, lat_max = lat.min(), lat.max()
-        
+
     # === LONGITUDE ===
     # split data along prime meridian (zero longitude)
-    mask_east = np.nonzero(lon < 180)
-    mask_west = np.nonzero(lon > 180)
-    
-    # indices east/west of prime meridian
-    idx_east = np.nonzero(
-        (ds[coords_lon].data > lon[mask_east].min()) & 
-        (ds[coords_lon].data < lon[mask_east].max()))[0]
-    idx_west = np.nonzero(
-        (ds[coords_lon].data > lon[mask_west].min()) & 
-        (ds[coords_lon].data < lon[mask_west].max()))[0]
-    
-    # pad subset longitude extent using offset
-    idx_max = ds[coords_lon].size - 1
-    pad_east_min = np.arange(idx_east[0] - offset, idx_east[0]) \
-        if idx_east[0] - offset >= 0 else np.arange(0, idx_east[0])
-    pad_east_max = np.arange(idx_east[-1] + 1, idx_east[-1] + offset + 1) \
-        if idx_east[-1] + offset <= idx_max else np.arange(idx_east[-1] + 1, idx_max)
-    idx_east_pad = np.hstack((pad_east_min, idx_east, pad_east_max))
-    
-    pad_west_min = np.arange(idx_west[0] - offset, idx_west[0]) \
-        if idx_west[0] - offset >= 0 else np.arange(0, idx_west[0])
-    pad_west_max = np.arange(idx_west[-1] + 1, idx_west[-1] + offset + 1) \
-        if idx_west[-1] + offset <= idx_max else np.arange(idx_west[-1] + 1, idx_max + 1)
-    idx_west_pad = np.hstack((pad_west_min, idx_west, pad_west_max))
-    
-    # === LATITUDE ===
-    lat_min_pad = float(ds[coords_lat][bisect.bisect(ds[coords_lat], lat_min) - offset].values)    
-    lat_max_pad = float(ds[coords_lat][bisect.bisect(ds[coords_lat], lat_max) + offset].values)
+    mask_east = np.nonzero(lon < 180)[0]
+    mask_west = np.nonzero(lon > 180)[0]
 
-    return slice(lat_min_pad, lat_max_pad), np.hstack((idx_east_pad, idx_west_pad))
+    # last index
+    idx_max = ds[coords_lon].size - 1
+
+    # indices east of prime meridian
+    if mask_east.size > 0:  # only if coordinates are ar within 0-180°
+        # indices east of prime meridian
+        idx_east = np.nonzero(
+            (ds[coords_lon].data > lon[mask_east].min()) &
+            (ds[coords_lon].data < lon[mask_east].max())
+            )[0]
+        # pad subset longitude extent to the east using offset
+        pad_east_min = np.arange(idx_east[0] - offset, idx_east[0]) \
+            if idx_east[0] - offset >= 0 else np.arange(0, idx_east[0])
+        pad_east_max = np.arange(idx_east[-1] + 1, idx_east[-1] + offset + 1) \
+            if idx_east[-1] + offset <= idx_max else np.arange(idx_east[-1] + 1, idx_max + 1)
+        idx_east_pad = np.hstack((pad_east_min, idx_east, pad_east_max))
+    else:
+        idx_east_pad = mask_east
+
+    # indices west of prime meridian
+    if mask_west.size > 0:  # only if coordinates are ar within 180-360°
+        idx_west = np.nonzero(
+            (ds[coords_lon].data > lon[mask_west].min()) &
+            (ds[coords_lon].data < lon[mask_west].max())
+            )[0]
+        # pad subset longitude extent to the east using offset
+        pad_west_min = np.arange(idx_west[0] - offset, idx_west[0]) \
+            if idx_west[0] - offset >= 0 else np.arange(0, idx_west[0])
+        pad_west_max = np.arange(idx_west[-1] + 1, idx_west[-1] + offset + 1) \
+            if idx_west[-1] + offset <= idx_max else np.arange(idx_west[-1] + 1, idx_max + 1)
+        idx_west_pad = np.hstack((pad_west_min, idx_west, pad_west_max))
+    else:
+        idx_west_pad = mask_west
+
+    # make sure there are no duplicates in the combined index array
+    lon_pad = np.hstack((idx_east_pad, idx_west_pad))
+    lon_pad = np.unique(lon_pad)
+
+    # === LATITUDE ===
+    # last index
+    n_latitude = len(ds[coords_lat]) - 1
+
+    # get index of minimum latitude
+    _idx_lat_min = bisect.bisect(ds[coords_lat], lat_min)
+    # check if too close to minimum index
+    if _idx_lat_min - offset >= 0:
+        _idx_lat_min -= offset
+    else:
+        _idx_lat_min = 0
+
+    # get index of maximum latitude
+    _idx_lat_max = bisect.bisect(ds[coords_lat], lat_max)
+    # check if too close to maximum index
+    if _idx_lat_max + offset <= n_latitude:
+        _idx_lat_max += offset
+    else:
+        _idx_lat_max = n_latitude
+
+    return slice(_idx_lat_min, _idx_lat_max), lon_pad
 
 
 def read_grd_netCDF(path, lat, lon, offset:int=3):  #TODO: update!
@@ -543,33 +584,33 @@ def read_grd_netCDF(path, lat, lon, offset:int=3):  #TODO: update!
     """
     # convert longitude from -180/180 to 0/360 range
     lon = longitude_to_360(lon)
-    
+
     # remove duplicate coordinates (for interpolation)
     lat_uniq, lat_idx, lat_inv = np.unique(
         lat, return_index=True, return_inverse=True)
     lon_uniq, lon_idx, lon_inv = np.unique(
         lon, return_index=True, return_inverse=True)
-    
+
     # create DataArrays for indexing
     lat_da = xr.DataArray(lat, dims='pos')
     lon_da = xr.DataArray(lon, dims='pos')
-    
+
     # open netCDF
     grd = xr.open_dataset(path)
-    
+
     # split into different datasets
     grd_z = grd[[v for v in grd.keys() if 'z' in v]]
     grd_u = grd[[v for v in grd.keys() if 'u' in v]]
     grd_v = grd[[v for v in grd.keys() if 'v' in v]]
-    
-    
+
+
     # get list of variables containing coordinates
     grd_z = grd_z.swap_dims({'nx':'lon_z', 'ny':'lat_z'})
     grd_u = grd_u.swap_dims({'nx':'lon_u', 'ny':'lat_u'})
     grd_v = grd_v.swap_dims({'nx':'lon_v', 'ny':'lat_v'})
-    
+
     lat_slice, lon_slice = subset_region(grd_z, lat, lon, offset=offset)
-    
+
     # sample grid at coordinate locations using cubic interpolation
     # using individual slices for h, u, v because their coordinate grids differ!
     lat_slice, lon_slice = subset_region(grd_z, lat, lon, offset=offset)
@@ -577,22 +618,22 @@ def read_grd_netCDF(path, lat, lon, offset:int=3):  #TODO: update!
     # (2) interpolate values within subset
     # (3) sample interpolated grid at coordinate positions
     hz_interp = grd_z.sel(lon_z=lon_slice, lat_z=lat_slice).interp(lon_z=lon, lat_z=lat, method='cubic').sel(lon_z=lon_da, lat_z=lat_da)
-    
+
     lat_slice, lon_slice = subset_region(grd_u, lat, lon, offset=offset, coords_lat='lat_u', coords_lon='lon_u')
     hu_interp = grd_u.sel(lon_u=lon_slice, lat_u=lat_slice).interp(lon_u=lon, lat_u=lat, method='cubic').sel(lon_u=lon_da, lat_u=lat_da)
-    
+
     lat_slice, lon_slice = subset_region(grd_v, lat, lon, offset=offset, coords_lat='lat_v', coords_lon='lon_v')
     hv_interp = grd_v.sel(lon_v=lon_slice, lat_v=lat_slice).interp(lon_v=lon, lat_v=lat, method='cubic').sel(lon_v=lon_da, lat_v=lat_da)
-    
+
     return hz_interp, hu_interp, hv_interp
-    
+
 
 def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=3, method='cubic'):
     """
     Read and sample tidal elevation constituent files at given coordinates.
     A subset of the input data is selected using coordinate extent increased by
     provided offset (as nodes in input netCDF files).
-    This subset is subsequently interpolated (cubic) 
+    This subset is subsequently interpolated (cubic)
     and sampled at the coordinate locations.
 
     Parameters
@@ -620,10 +661,10 @@ def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=3, method='cub
     """
     lat = np.atleast_1d(lat)
     lon = np.atleast_1d(lon)
-        
+
     # convert longitude from -180/180 to 0/360 range
     lon = longitude_to_360(lon)
-    
+
     # remove duplicate coordinates (for interpolation)
     lat_uniq, lat_idx, lat_inv = np.unique(
         lat, return_index=True, return_inverse=True)
@@ -633,10 +674,10 @@ def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=3, method='cub
     # create DataArrays for indexing
     lat_da = xr.DataArray(lat, dims='pos')
     lon_da = xr.DataArray(lon, dims='pos')
-    
+
     # downcase  constituent names
     constituents = [c.lower() for c in constituents]
-    
+
     # loop over file paths and load only specified ones
     ds_cons = []
     cons_loaded = []
@@ -650,23 +691,24 @@ def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=3, method='cub
             ds = ds.drop_vars('con').swap_dims({'nx':'lon_z', 'ny':'lat_z'})
             var_names = list(ds.data_vars)
             ds = ds.rename_vars(dict(zip(var_names, [f'{con}_{v}' for v in var_names])))
-            
+
             ds_cons.append(ds)
             cons_loaded.append(con)
-    
+
     # merge individual constituents into single dataset
     h = xr.merge(ds_cons)
     h.attrs['constituents'] = cons_loaded
-      
-    # sample constituents at coordinate locations using cubic interpolation 
+
+    # sample constituents at coordinate locations using cubic interpolation
     lat_subset, lon_subset = subset_region(h, lat, lon, offset=offset)
-    h_interp = h.sel(lat_z=lat_subset).isel(lon_z=lon_subset).interp(
-                lon_z=lon_uniq, lat_z=lat_uniq, method=method).sel(lon_z=lon_da, lat_z=lat_da)
-    
+    # h_interp = h.sel(lat_z=lat_subset).isel(lon_z=lon_subset).interp(
+    #             lon_z=lon_uniq, lat_z=lat_uniq, method=method).sel(lon_z=lon_da, lat_z=lat_da)
+    h_interp = h.isel(lat_z=lat_subset, lon_z=lon_subset).interp(lon_z=lon_da, lat_z=lat_da, method=method)
+
     if len(constituents) != len(cons_loaded):
-        print('[WARNING]    Could not find constituents: ', 
+        print('[WARNING]    Could not find constituents: ',
               list(set(constituents) - set(cons_loaded)))
-    
+
     return h_interp
 
 

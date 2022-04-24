@@ -3,5 +3,3 @@ from .predict_tide import (
     tide_predict,
     write_tides
     )
-
-__version__ = '0.1'

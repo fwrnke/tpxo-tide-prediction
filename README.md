@@ -1,4 +1,5 @@
 # tpxo-tide-prediction
+
 This package allows the user to predict tidal elevations computed based on the [TPXO9-atlas](https://www.tpxo.net/global/tpxo9-atlas) models (**netCDF** format) provided by [Gary Egbert & Svetlana Erofeeva from the Oregon State University](https://www.tpxo.net/home) (on request for academic purposes).
 
 ## Disclaimer
@@ -14,14 +15,17 @@ The code is based on the [original OTPS software package](https://www.tpxo.net/o
 The original OTPS license can be found in the file [LICENSE_OSU.pdf](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/LICENSE_OSU.pdf).
 
 ## Current capabilities
+
 **NOTE**: This package only supports the prediction of tidal elevations (**h**) and **<u>not</u>** tidal transport (**u**, **v**).
 
 At the moment, both the `TPXO9-atlas-v4` and `-v5` tidal models are supported. The following tidal constituents are available:
-- M2, S2, K1, O1, N2, P1, K2, Q1, 2N2, K2, M4, MF, MM, MN4, MS4, S1 (**only v5**) 
 
-Behind the scenes, `tpxo-tide-prediction` is based on the great `xarray` packages that enables easy I/O of netCDF files. To minimize computational time and resources, the global constituent files are clipped to the requested coordinate region plus a buffer of 10 nodes (_default_) in order to avoid edge effects during the following _cubic_ interpolation. The selected constituents are sampled at the coordinates location of the interpolated grid. 
+- M2, S2, K1, O1, N2, P1, K2, Q1, 2N2, K2, M4, MF, MM, MN4, MS4, 
+- S1 (**only v5**) 
 
-**NOTE**: The chosen cubic interpolation and the indexing method result in predicted tides that are slightly different compared to the output of the OSU Tidal Prediction Software ([OTPS](https://www.tpxo.net/otps)) using a bi-linear interpolation method!
+Behind the scenes, `tpxo-tide-prediction` is based on the great `xarray` packages that enables easy I/O of netCDF files. To minimize computational time and resources, the global constituent files are clipped to the requested coordinate region plus a buffer of **3** nodes (_default_) in order to avoid edge effects during the following *linear* interpolation. The selected constituents are sampled at the coordinates location of the interpolated grid. 
+
+**NOTE**: The chosen *linear* interpolation and used indexing method result in predicted tides that are slightly different compared to the output of the OSU Tidal Prediction Software ([OTPS](https://www.tpxo.net/otps)) using a *bi-linear* interpolation method!
 
 ## Installation
 
@@ -57,14 +61,14 @@ Optionally, the following parameter can be used:
 
 - `--help`, `-h`: show help
 - `--constituents`: Available tidal constituents supported by TPXO9 atlas model.
-  - **default**: m2, s2, n2, k2, k1, o1, p1, q1
+   - **default**: m2, s2, n2, k2, k1, o1, p1, q1
 - `--correct_minor`: Correct for minor tidal constituents.
 - `--lat`: Constant latitude for each timestep in parameter file. Expecting only TIME column.
 - `--lon`: Constant longitude for each timestep in parameter file. Expecting only TIME column.
 - `--time`, `-t`: One of the following options (expecting only LAT and LON columns):
-  - constant time for every coordinate position (YYYY-MM-DDThh:mm:ss)
-  - start and end time [START END] 
-  - start and end time with stepsize [START END STEP] (as _X_(D)ay, _X_(M)onth, _X_(Y)ear, _X_(h)ours, _X_(m)inutes, or _X_(s)econds, with _X_: integer number of units, e.g. "5s")
+   - constant time for every coordinate position (YYYY-MM-DDThh:mm:ss)
+   - start and end time [START END] 
+   - start and end time with stepsize [START END STEP] (as _X_(D)ay, _X_(M)onth, _X_(Y)ear, _X_(h)ours, _X_(m)inutes, or _X_(s)econds, with _X_: integer number of units, e.g. "5s")
 - `--output_file`: Output file path for predicted tides.
 - `--mode`, `-m`: Output either _time x position matrix_ (**full**) or only at matching _time, lat, lon_ locations (**track**).
 
@@ -78,9 +82,9 @@ Additionally, it is possible to just import the essential functions `read_parame
 
 ```
 from tpxo_tide_prediction import (
-	read_parameter_file,
-	tide_predict,
-	write_tides
+    read_parameter_file,
+    tide_predict,
+    write_tides
     )
 ```
 
@@ -107,7 +111,7 @@ tide = tide_predict('path/to/TPXO9-atlas-model', lat, lon, times)
 
 # (B) custom configuration (less constituents, no correction of minor constituents)
 tide = tide_predict('path/to/TPXO9-atlas-model', lat, lon, times,
-					constituents=['m2','s2','n2','k2'], correct_minor=False)
+                    constituents=['m2','s2','n2','k2'], correct_minor=False)
 ```
 
 #### Write computed tides to formatted output file
@@ -137,3 +141,7 @@ The folder `./examples` contains different input parameter files for the use of 
 - [params_lat_lon_time_track.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_lat_lon_time_track.txt): different locations with different timesteps (**track**, negative latitudes, positive longitudes)
 - [params_lat_lon_time_track-2.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_lat_lon_time_track-2.txt): different locations with different timesteps (**track**, negative latitudes and longitudes)
 - [params_lat_lon_time_OTPSnc.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_lat_lon_time_OTPSnc.txt): various lat, lon, time combinations adapted from input file shipped with [OTPSnc](https://www.tpxo.net/otps)
+- [params_tracks_dateline.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_tracks_dateline.txt): track (lat, lon, time) crossing the dateline (180°E/180°W)
+- [params_tracks_equator.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_tracks_equator.txt): track (lat, lon, time) crossing the equator
+- [params_tracks_north_pole.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_tracks_north_pole.txt): track (lat, lon, time) running close to the north pole
+- [params_tracks_zero_meridian.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_tracks_zero_meridian.txt):  track (lat, lon, time) crossing the prime meridian (0° longitude)

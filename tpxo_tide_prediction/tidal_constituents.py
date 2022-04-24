@@ -18,8 +18,19 @@ Tidal parameters taken from Rodney's constituent.h, 2/23/96.
 
 This file has been ported from the original Fortran code written
 by Gary Egbert and Lana Erofeeva (OTPSnc).
-
 """
+
+__all__ = [
+    'CONST_ID',
+    'N_CONSTIDS',
+    'ISPEC_d',
+    'ALPHA_d',
+    'OMEGA_d',
+    'PH_d',
+    'AMP_d',
+    'PHASE_mkB',
+    'BETA_SE',
+    ]
 
 CONST_ID = ['m2', 's2', 'k1', 'o1',
             'n2', 'p1', 'k2', 'q1',

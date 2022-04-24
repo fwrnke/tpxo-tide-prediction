@@ -99,4 +99,25 @@ def test_infer_minor(allclose):
     dh = infer_minor(hc, constituents, mjd, timesteps)
     
     assert allclose(dh, np.atleast_2d(np.repeat([-0.00280321], len(times))).T)
+
+
+@pytest.mark.parametrize('lon, expected_lon', 
+                         [(    0,      0),
+                          (-180 ,   -180),
+                          (180.5, -179.5),
+                          (276.2214, -83.7786)
+                          ])
+def test_longitude_to_180(lon, expected_lon):
+    lon_180 = longitude_to_180(lon)
+    assert lon_180 == expected_lon
     
+    
+@pytest.mark.parametrize('lon, expected_lon', 
+                         [(    0,      0),
+                          (-180 ,    180),
+                          (-179.5, 180.5),
+                          (276.2214, 276.2214)
+                          ])
+def test_longitude_to_360(lon, expected_lon):
+    lon_360 = longitude_to_360(lon)
+    assert lon_360 == expected_lon
