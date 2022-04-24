@@ -71,9 +71,9 @@ def test_nodal(mjd, constituents, expected_nodal_corrections, allclose):
 
 
 def test_infer_minor(allclose):
-    paths_h = glob.glob(os.path.join(os.path.dirname(__file__), '../data/h_*.nc'))
+    paths_h = glob.glob(os.path.join(os.path.dirname(__file__), '../data/v4/h_*.nc'))
     if paths_h == []:
-        p = os.path.join(os.path.dirname(__file__), '../data/')
+        p = os.path.join(os.path.dirname(__file__), '../data/v4/')
         raise FileNotFoundError(f'Could not find model netCDF files in path: {p}')
     lat = -36.5
     lon = -175
@@ -109,7 +109,7 @@ def test_infer_minor(allclose):
                           ])
 def test_longitude_to_180(lon, expected_lon):
     lon_180 = longitude_to_180(lon)
-    assert lon_180 == expected_lon
+    assert np.allclose(lon_180, expected_lon)
     
     
 @pytest.mark.parametrize('lon, expected_lon', 
@@ -120,4 +120,4 @@ def test_longitude_to_180(lon, expected_lon):
                           ])
 def test_longitude_to_360(lon, expected_lon):
     lon_360 = longitude_to_360(lon)
-    assert lon_360 == expected_lon
+    assert np.allclose(lon_360, expected_lon)

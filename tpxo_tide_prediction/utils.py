@@ -466,7 +466,7 @@ def longitude_to_180(lon):
     return ((lon + 180) % 360) - 180
 
 
-def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset=3):
+def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset:int=3):
     """
     Return coordinate slices that match existing coordinate locations in xr.Dataset.
     Slices are determined using input coordinate arrays and offset (# of nodes).
@@ -507,7 +507,7 @@ def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset=3
     idx_max = ds[coords_lon].size - 1
 
     # indices east of prime meridian
-    if mask_east.size > 0:  # only if coordinates are ar within 0-180°
+    if mask_east.size > 1:  # only if coordinates are within 0-180°
         # indices east of prime meridian
         idx_east = np.nonzero(
             (ds[coords_lon].data > lon[mask_east].min()) &
@@ -519,11 +519,18 @@ def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset=3
         pad_east_max = np.arange(idx_east[-1] + 1, idx_east[-1] + offset + 1) \
             if idx_east[-1] + offset <= idx_max else np.arange(idx_east[-1] + 1, idx_max + 1)
         idx_east_pad = np.hstack((pad_east_min, idx_east, pad_east_max))
+    elif mask_east.size == 1:  # single position provided
+       idx_east = bisect.bisect(ds[coords_lon], lon[mask_east][0])
+       pad_east_min = np.arange(idx_east - offset, idx_east) \
+           if idx_east - offset >= 0 else np.arange(0, idx_east)
+       pad_east_max = np.arange(idx_east + 1, idx_east + offset + 1) \
+           if idx_east + offset <= idx_max else np.arange(idx_east + 1, idx_max + 1)
+       idx_east_pad = np.hstack((pad_east_min, idx_east, pad_east_max))
     else:
         idx_east_pad = mask_east
 
     # indices west of prime meridian
-    if mask_west.size > 0:  # only if coordinates are ar within 180-360°
+    if mask_west.size > 1:  # only if coordinates are within 180-360°
         idx_west = np.nonzero(
             (ds[coords_lon].data > lon[mask_west].min()) &
             (ds[coords_lon].data < lon[mask_west].max())
@@ -533,6 +540,13 @@ def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset=3
             if idx_west[0] - offset >= 0 else np.arange(0, idx_west[0])
         pad_west_max = np.arange(idx_west[-1] + 1, idx_west[-1] + offset + 1) \
             if idx_west[-1] + offset <= idx_max else np.arange(idx_west[-1] + 1, idx_max + 1)
+        idx_west_pad = np.hstack((pad_west_min, idx_west, pad_west_max))
+    elif mask_west.size == 1:  # single position provided
+        idx_west = bisect.bisect(ds[coords_lon], lon[mask_west][0])
+        pad_west_min = np.arange(idx_west - offset, idx_west) \
+            if idx_west - offset >= 0 else np.arange(0, idx_west)
+        pad_west_max = np.arange(idx_west + 1, idx_west + offset + 1) \
+            if idx_west + offset <= idx_max else np.arange(idx_west + 1, idx_max + 1)
         idx_west_pad = np.hstack((pad_west_min, idx_west, pad_west_max))
     else:
         idx_west_pad = mask_west
@@ -628,7 +642,7 @@ def read_grd_netCDF(path, lat, lon, offset:int=3):  #TODO: update!
     return hz_interp, hu_interp, hv_interp
 
 
-def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=3, method='cubic'):
+def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=3, method='linear'):
     """
     Read and sample tidal elevation constituent files at given coordinates.
     A subset of the input data is selected using coordinate extent increased by
@@ -650,7 +664,7 @@ def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=3, method='cub
         Offset value (nodes in input netCDFs) used to extend coordinate boundaries
         before extracting subset and interpolating.
     method : str
-        Interpolation method. Choose from 'nearest', 'linear', or 'cubic'.
+        Interpolation method. Choose from 'nearest' or 'linear'.
 
     Returns
     -------
@@ -674,7 +688,7 @@ def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=3, method='cub
     # create DataArrays for indexing
     lat_da = xr.DataArray(lat, dims='pos')
     lon_da = xr.DataArray(lon, dims='pos')
-
+    
     # downcase  constituent names
     constituents = [c.lower() for c in constituents]
 
@@ -699,10 +713,8 @@ def read_h_netCDFs(paths, lat, lon, constituents:list, offset:int=3, method='cub
     h = xr.merge(ds_cons)
     h.attrs['constituents'] = cons_loaded
 
-    # sample constituents at coordinate locations using cubic interpolation
+    # sample constituents at coordinate locations using user-specified interpolation method
     lat_subset, lon_subset = subset_region(h, lat, lon, offset=offset)
-    # h_interp = h.sel(lat_z=lat_subset).isel(lon_z=lon_subset).interp(
-    #             lon_z=lon_uniq, lat_z=lat_uniq, method=method).sel(lon_z=lon_da, lat_z=lat_da)
     h_interp = h.isel(lat_z=lat_subset, lon_z=lon_subset).interp(lon_z=lon_da, lat_z=lat_da, method=method)
 
     if len(constituents) != len(cons_loaded):
