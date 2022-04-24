@@ -2,6 +2,8 @@ __pycache__
 v5/
 tmp/
 build/
+.pytest_cache/
+.gitignore
 *.egg-info
 *.nc
 examples/test_track

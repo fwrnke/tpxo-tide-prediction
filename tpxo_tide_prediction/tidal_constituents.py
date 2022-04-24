@@ -18,7 +18,6 @@ Tidal parameters taken from Rodney's constituent.h, 2/23/96.
 
 This file has been ported from the original Fortran code written
 by Gary Egbert and Lana Erofeeva (OTPSnc).
-
 """
 
 __all__ = [

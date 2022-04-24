@@ -370,7 +370,9 @@ def main(input_args=None):
     lat, lon, times = read_parameter_file(args.params_file, args.lat, args.lon, args.time)
 
     if args.mode == 'track' and not (lat.size == lon.size == times.size):
-        raise ValueError('For mode `track` the input parameter `lat`, `lon` and `times` must have the same size!')
+        raise ValueError(
+            'For mode `track` the input parameter `lat`, `lon` and `times` must have the same size!'
+            )
 
     #  predict tides at given times and positions
     tide = tide_predict(args.model_dir, lat, lon, times, args.constituents,
@@ -384,7 +386,7 @@ if __name__ == '__main__':
     # -------------------------------------------------------------------------
     #                           INPUT PARAMETER
     # -------------------------------------------------------------------------
-    cmd_str = '''../data
+    cmd_str = '''../data/v5
         ../examples/params_tracks_dateline.txt
         --constituents m2 s2 n2 k2 k1 o1 p1 q1 m4 ms4 mn4 mm mf
         --correct_minor
@@ -395,4 +397,4 @@ if __name__ == '__main__':
         # --lon 175.98765
         # --output_file ../tmp/tracks_dateline.out
 
-    main(cmd_str)
+    main()

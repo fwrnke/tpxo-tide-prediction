@@ -8,10 +8,9 @@ def read(fname, mode='r', encoding='utf-8'):
                 encoding=encoding)
 
 def get_version(fname='VERSION'):
-    """ Retrieve package version from main __init__.py """
+    """ Retrieve package version from VERSION file """
     try:
         with read(fname) as f:
-            #init_py = f.read()
             version = f.read()
         return version
     except FileNotFoundError:
@@ -20,7 +19,7 @@ def get_version(fname='VERSION'):
 with read('README.md') as f:
     long_description = f.read()
 
-print(get_version())
+# print(get_version())
 
 setuptools.setup(
     name='tpxo-tide-prediction',
