@@ -261,7 +261,7 @@ def read_parameter_file(params_file, lat=None, lon=None, times=None):
             times = np.arange(np.datetime64(times[0]), np.datetime64(times[1]) + step , step)
         else:
             # single time --> constant time for every data point
-            times = np.array([np.datetime64(times)])
+            times = np.array([np.datetime64(t) for t in times])
     elif len(times_list) > 1:
         times = np.asarray(times_list)
     else:
@@ -313,11 +313,13 @@ def write_tides(tide,
 
     """
     prefix = np.datetime_as_string(np.datetime64('today')).replace(':','')
-
-
-
-    if mode == 'full':
+    
+    if tide.ndim == 1:
+        nrows, ncols = tide.size, 1
+    elif tide.ndim == 2:
         nrows, ncols = tide.shape
+    
+    if mode == 'full':
         output_file = output_file if output_file is not None else os.path.join(basepath, f'{prefix}_{basename}_tides.txt')
         header = ','.join([f'pos{i+1}_m' for i in range(ncols)])
         
@@ -326,7 +328,7 @@ def write_tides(tide,
             fmt = '%s' + ',%.6f' * ncols
             data = np.empty((nrows, ncols + 1), dtype='object')
             data[:,0]  = np.datetime_as_string(times)
-            data[:,1:] = tide
+            data[:,1:] = np.atleast_2d(tide).T if tide.ndim == 1 else tide
         elif export_params and times is not None and lat.size == 1:
             header = 'lat,lon,timestamp,tide_m'
             fmt = '%.6f,%.6f,%s,%.6f'
@@ -341,7 +343,6 @@ def write_tides(tide,
             data = tide
         np.savetxt(output_file, data, fmt=fmt, delimiter=',', newline='\n', header=header, comments='')
     elif mode == 'track':
-        nrows = tide.size
         output_file = output_file if output_file is not None else os.path.join(basepath, f'{prefix}_{basename}_tides-along-track.txt')
 
         if export_params and all([var is not None for var in [lat, lon, times]]):
@@ -383,18 +384,4 @@ def main(input_args=None):
 
 #%%
 if __name__ == '__main__':
-    # -------------------------------------------------------------------------
-    #                           INPUT PARAMETER
-    # -------------------------------------------------------------------------
-    cmd_str = '''../data/v5
-        ../examples/params_tracks_dateline.txt
-        --constituents m2 s2 n2 k2 k1 o1 p1 q1 m4 ms4 mn4 mm mf
-        --correct_minor
-        --mode track
-        --export_params
-        '''.split()
-        # --lat -44.12345
-        # --lon 175.98765
-        # --output_file ../tmp/tracks_dateline.out
-
     main()
