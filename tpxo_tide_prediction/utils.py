@@ -513,6 +513,9 @@ def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset:i
             (ds[coords_lon].data > lon[mask_east].min()) &
             (ds[coords_lon].data < lon[mask_east].max())
             )[0]
+        # fail safe: min AND max longitude in between two grid nodes from netCDF files...
+        if idx_east.size == 0:
+            idx_east = np.array([bisect.bisect(ds[coords_lon], lon[mask_east].min())])  # closest index
         # pad subset longitude extent to the east using offset
         pad_east_min = np.arange(idx_east[0] - offset, idx_east[0]) \
             if idx_east[0] - offset >= 0 else np.arange(0, idx_east[0])
@@ -535,6 +538,9 @@ def subset_region(ds, lat, lon, coords_lat='lat_z', coords_lon='lon_z', offset:i
             (ds[coords_lon].data > lon[mask_west].min()) &
             (ds[coords_lon].data < lon[mask_west].max())
             )[0]
+        # fail safe: min AND max longitude in between two grid nodes from netCDF files...
+        if idx_west.size == 0:
+            idx_west = np.array([bisect.bisect(ds[coords_lon], lon[mask_west].min())])  # closest index
         # pad subset longitude extent to the east using offset
         pad_west_min = np.arange(idx_west[0] - offset, idx_west[0]) \
             if idx_west[0] - offset >= 0 else np.arange(0, idx_west[0])
