@@ -145,3 +145,4 @@ The folder `./examples` contains different input parameter files for the use of 
 - [params_tracks_equator.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_tracks_equator.txt): track (lat, lon, time) crossing the equator
 - [params_tracks_north_pole.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_tracks_north_pole.txt): track (lat, lon, time) running close to the north pole
 - [params_tracks_zero_meridian.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_tracks_zero_meridian.txt):  track (lat, lon, time) crossing the prime meridian (0° longitude)
+- [params_tracks_between_grid_nodes.txt](https://github.com/fwrnke/tpxo-tide-prediction/blob/main/examples/params_tracks_between_grid_nodes.txt): track (lat, lon, time) with all longitude values located in between two grid nodes of TPXO netCDF files
