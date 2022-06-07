@@ -23,7 +23,7 @@ At the moment, both the `TPXO9-atlas-v4` and `-v5` tidal models are supported. T
 - M2, S2, K1, O1, N2, P1, K2, Q1, 2N2, K2, M4, MF, MM, MN4, MS4, 
 - S1 (**only v5**) 
 
-Behind the scenes, `tpxo-tide-prediction` is based on the great `xarray` packages that enables easy I/O of netCDF files. To minimize computational time and resources, the global constituent files are clipped to the requested coordinate region plus a buffer of **3** nodes (_default_) in order to avoid edge effects during the following *linear* interpolation. The selected constituents are sampled at the coordinates location of the interpolated grid. 
+Behind the scenes, `tpxo-tide-prediction` is based on the great `xarray` package that enables easy I/O of netCDF files. To minimize computational time and resources, the global constituent files are clipped to the requested coordinate region plus a buffer of **3** nodes (_default_) in order to avoid edge effects during the following *linear* interpolation. The selected constituents are sampled at the coordinates location of the interpolated grid. 
 
 **NOTE**: The chosen *linear* interpolation and used indexing method result in predicted tides that are slightly different compared to the output of the OSU Tidal Prediction Software ([OTPS](https://www.tpxo.net/otps)) using a *bi-linear* interpolation method!
 
@@ -37,7 +37,7 @@ pip install git+https://github.com/fwrnke/tpxo-tide-prediction.git
 
 You can also download the repository as a ZIP archive. To install `tpxo-tide-prediction` locally using `pip` after unzipping the downloaded archive:
 
-```
+```bash
 >>> cd ./tpxo-tide-prediction  # root directory of unzipped package
 >>> pip install [-e] .         # -e: setuptools "develop mode"
 ```
@@ -55,7 +55,7 @@ predict_tide {model_dir} {model_dir} [optional parameters]
 This script requires two positional arguments:
 
 - `model_dir`: Input directory of the model files (e.g. `./data`).
-- `params_file`: Input parameter file with columns [LAT, LON, UTC TIME (YYYY-MM-DDThh:mm:ss)]. Could be provided as [LAT, LON] if "--time" is set or as [UTC TIME] if "--lat" and "--lon" are set.
+- `params_file`: Input parameter file with columns [LAT, LON, UTC TIME (YYYY-MM-DDThh:mm:ss)]. Could be provided as [LAT, LON] if `--time` is set or as [UTC TIME] if `--lat` and `--lon` are set.
 
 Optionally, the following parameter can be used:
 
@@ -80,7 +80,7 @@ Additionally, it is possible to just import the essential functions `read_parame
 
 #### Import package
 
-```
+```python
 from tpxo_tide_prediction import (
     read_parameter_file,
     tide_predict,
@@ -90,7 +90,7 @@ from tpxo_tide_prediction import (
 
 #### Read input parameter from file
 
-```
+```python
 # (A) read inputs from parameter file
 lat, lon, times = read_parameter_file('path/to/parameter/file.txt')
 
@@ -102,7 +102,7 @@ lat, lon, times = read_parameter_file('path/to/parameter/file', lat, lon)
 
 #### Compute tidal elevation
 
-```
+```python
 # lat, lon:  int, float, np.ndarray
 # times:     str, np.ndarray(dtype='datetime64[s]')
 
@@ -116,7 +116,7 @@ tide = tide_predict('path/to/TPXO9-atlas-model', lat, lon, times,
 
 #### Write computed tides to formatted output file
 
-```
+```python
 # (A) custom output file
 # full output (tide at every time at every location)
 write_tides('path/to/output/file.tide', tide, mode='full')
