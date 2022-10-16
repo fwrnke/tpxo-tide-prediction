@@ -1,5 +1,9 @@
 # tpxo-tide-prediction - Changelog
 
+## v0.2.3 (2022-10-17)
+Release for Zenodo DOI. 
+No futher code changes.
+
 ## v0.2.2 (2022-06-07)
 
 Minor bugfix.
@@ -11,9 +15,7 @@ Minor bugfix.
 ### Changed
 
 - `utils.py`
-  
    - `subset_region()`:
-     
       - fix indexing when both minimum and maximum longitude are in between two grid nodes of loaded constituent netCDF files
 
 ## v0.2.1 (2022-06-02)
@@ -23,15 +25,10 @@ Minor bugfixes.
 ### Changed
 
 - `predict_tide.py`
-  
    - `read_parameter_file()`
-     
       - fix error after parsing single time input from command line
-
 - `utils.py`
-  
    - `subset_region()`:
-     
       - selecting only single position
 
 ## v0.2.0 (2022-04-24)
