@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/423613235.svg)](https://zenodo.org/badge/latestdoi/423613235)
+
 # tpxo-tide-prediction
 
 This package allows the user to predict tidal elevations computed based on the [TPXO9-atlas](https://www.tpxo.net/global/tpxo9-atlas) models (**netCDF** format) provided by [Gary Egbert & Svetlana Erofeeva from the Oregon State University](https://www.tpxo.net/home) (on request for academic purposes).
