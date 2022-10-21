@@ -113,10 +113,15 @@ def tide_predict(model_dir, lat, lon, times,
         Predicted tides with shape (timestamp x positions).
 
     """
+    # sanity checks
+    if not os.path.isdir(model_dir):
+        raise IOError(f'>{model_dir}< is not a valid file directory!')
+    
+    lat = np.asarray(lat)
+    lon = np.asarray(lon)
+    
     # get number of positions
     npts = lon.size
-    # get number of timesteps
-    ntimes = times.size
 
     #--- prepare times
     # calc modified julian day (MJD) since 1992-01-01
@@ -129,6 +134,8 @@ def tide_predict(model_dir, lat, lon, times,
     mjd = (time_init.astype('datetime64[D]') - np.datetime64('1992-01-01', 'D')).astype('float') + 48622.0
     # calc timesteps in seconds since 1992-01-01
     timesteps = (times - np.datetime64('1992-01-01','s')).astype('float')
+    # get number of timesteps
+    ntimes = times.size
 
     #--- prepare input tidal constituents
     constituents = [c.lower() for c in constituents if c.lower() in CONST_ID]
