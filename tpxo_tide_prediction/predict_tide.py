@@ -117,6 +117,10 @@ def tide_predict(model_dir, lat, lon, times,
     if not os.path.isdir(model_dir):
         raise IOError(f'>{model_dir}< is not a valid file directory!')
     
+    paths_h = glob.glob(model_dir + '/h_*.nc')
+    if len(paths_h) == 0:
+        raise IOError(f'No netCDF files found in directory > {model_dir} <')
+    
     lat = np.asarray(lat)
     lon = np.asarray(lon)
     
@@ -151,7 +155,6 @@ def tide_predict(model_dir, lat, lon, times,
 
     #--- read input tidal constituents
     # read OTIS tidal elevation files
-    paths_h = glob.glob(model_dir + '/h_*.nc')
     h = read_h_netCDFs(paths_h, lat, lon, constituents, method=method)
 
     # build (complex) harmonic constant array from netCDFs
