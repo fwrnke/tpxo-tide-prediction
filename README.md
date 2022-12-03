@@ -8,6 +8,9 @@ This package allows the user to predict tidal elevations computed based on the [
 
 This package was build to compute tidal corrections for *user-specified timestamps and geographical positions*. It uses the  latest 1/30 degree resolution fully global solution [TPXO9-atlas-v4/v5](https://www.tpxo.net/global/tpxo9-atlas) tidal model.
 
+**NOTE: The `TPXO9-atlas-v*` netCDF files have to be downloaded _separately_ from the OSU [webpage](https://www.tpxo.net/global) (free registration for academic usage)!**
+
+
 The code is based on the [original OTPS software package](https://www.tpxo.net/otps) written in Fortran-90 and developed at the [OSU](https://www.tpxo.net/home) with further inspirations from:
 
 - [pyTMD](https://pytmd.readthedocs.io/en/latest/) (Python-based tidal prediction software) by T. C. Sutterley
