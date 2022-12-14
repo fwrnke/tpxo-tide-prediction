@@ -322,6 +322,11 @@ def write_tides(tide,
         If True, export LAT, LON, TIMESTAMP ("track") or TIMESTAMP ("full") with tide.
 
     """
+    if all(v is None for v in [output_file, basepath, basename]):
+        raise ValueError('Must provide either `output_file` or `basepath` AND `basename`!')
+    if output_file is None and any(v is None for v in [basepath, basename]):
+        raise ValueError('Must provide `basepath` AND `basename` when not using `output_file`!')
+        
     prefix = np.datetime_as_string(np.datetime64('today')).replace(':','')
     
     if tide.ndim == 1:
