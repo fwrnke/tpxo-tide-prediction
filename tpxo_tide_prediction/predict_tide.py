@@ -313,11 +313,11 @@ def write_tides(tide,
         Parameter filename without suffix.
         Either `output_file` or `basepath` and `basename` must be provided.
     lat : np.ndarray, None
-        Latitude used for tide predictions.
+        Latitude used for tide predictions (if export_params=True).
     lon : np.ndarray, None
-        Longitude used for tide predictions.
+        Longitude used for tide predictions (if export_params=True).
     times : np.ndarray, None
-        Timestamps used for tide predictions.
+        Timestamps used for tide predictions (if export_params=True).
     export_params : bool, False
         If True, export LAT, LON, TIMESTAMP ("track") or TIMESTAMP ("full") with tide.
 
@@ -327,7 +327,7 @@ def write_tides(tide,
     if output_file is None and any(v is None for v in [basepath, basename]):
         raise ValueError('Must provide `basepath` AND `basename` when not using `output_file`!')
         
-    prefix = np.datetime_as_string(np.datetime64('today')).replace(':','')
+    prefix = np.datetime_as_string(np.datetime64('today')).replace(':', '')
     
     if tide.ndim == 1:
         nrows, ncols = tide.size, 1
@@ -335,6 +335,11 @@ def write_tides(tide,
         nrows, ncols = tide.shape
     
     if mode == 'full':
+        if export_params and times is None:
+            raise ValueError('`times` must be specified')
+        if export_params and len(times) != nrows:
+            raise ValueError('`times` must be same length (or nrows) as `tide`')
+        
         output_file = output_file if output_file is not None else os.path.join(basepath, f'{prefix}_{basename}_tides.txt')
         header = ','.join([f'pos{i+1}_m' for i in range(ncols)])
         
@@ -342,36 +347,39 @@ def write_tides(tide,
             header = 'timestamp,' + header
             fmt = '%s' + ',%.6f' * ncols
             data = np.empty((nrows, ncols + 1), dtype='object')
-            data[:,0]  = np.datetime_as_string(times)
-            data[:,1:] = np.atleast_2d(tide).T if tide.ndim == 1 else tide
+            data[:, 0] = np.datetime_as_string(times)
+            data[:, 1:] = np.atleast_2d(tide).T if tide.ndim == 1 else tide
         elif export_params and times is not None and lat.size == 1:
             header = 'lat,lon,timestamp,tide_m'
             fmt = '%.6f,%.6f,%s,%.6f'
             data = np.empty((nrows, 4), dtype='object')
-            data[:,0] = lat
-            data[:,1] = lon
-            data[:,2] = np.datetime_as_string(times)
-            data[:,3] = tide.squeeze()
+            data[:, 0] = lat
+            data[:, 1] = lon
+            data[:, 2] = np.datetime_as_string(times)
+            data[:, 3] = tide.squeeze()
         elif not export_params:
             # header = 'Predicted tides for input parameter file provided as timestamp x position (rows x cols)'
             fmt = '%.6f'
             data = tide
         np.savetxt(output_file, data, fmt=fmt, delimiter=',', newline='\n', header=header, comments='')
     elif mode == 'track':
+        if export_params and any([v is None for v in [lat, lon, times]]):
+            raise ValueError('`lat`, `lon`, and `times` must be specified')
+        
         output_file = output_file if output_file is not None else os.path.join(basepath, f'{prefix}_{basename}_tides-along-track.txt')
 
         if export_params and all([var is not None for var in [lat, lon, times]]):
             header = 'lat,lon,timestamp,tide_m'
             fmt = '%.6f,%.6f,%s,%.6f'
             data = np.empty((nrows, 4), dtype='object')
-            data[:,0] = lat
-            data[:,1] = lon
-            data[:,2] = np.datetime_as_string(times)
-            data[:,3] = tide#[idx_track]
+            data[:, 0] = lat
+            data[:, 1] = lon
+            data[:, 2] = np.datetime_as_string(times)
+            data[:, 3] = tide
         elif not export_params:
             header = 'tide_m'
             fmt = '%.6f'
-            data = tide#[idx_track]
+            data = tide
         np.savetxt(output_file, data, fmt=fmt, delimiter=',', newline='\n', header=header, comments='')
 
 
