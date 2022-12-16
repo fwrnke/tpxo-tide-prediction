@@ -121,14 +121,24 @@ tide = tide_predict('path/to/TPXO9-atlas-model', lat, lon, times,
 
 #### Write computed tides to formatted output file
 
+**(A) custom output file**
 ```python
-# (A) custom output file
-# full output (tide at every time at every location)
+# (1) `full` output (tide at every time at every location)
 write_tides('path/to/output/file.tide', tide, mode='full')
-# or `track` output (lat-lon-time triplets)
+# (2) `full` output (with times)
+write_tides('path/to/output/file.tide', tide, mode='full', times=times, export_params=True)
+```
+```python
+# (1) `track` output (only tide)
 write_tides('path/to/output/file.tide', tide, mode='track')
+# (2) `track` output (lat-lon-time-tide quadruplets)
+write_tides('path/to/output/file.tide', tide, mode='track', lat=lat, lon=lon, times=times,
+            export_params=True)
+```
 
-# (B) create output file from parameter file
+**(B) create output file apth from parameter file**
+```python
+# NOTE: for export of additional parameter, use syntax as described above
 basepath, filename = os.path.split('path/to/parameter/file.txt')
 basename, suffix = os.path.splitext(filename)
 write_tides(basepath, basename, tide, mode='full')
