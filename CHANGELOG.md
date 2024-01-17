@@ -1,6 +1,15 @@
 # tpxo-tide-prediction - Changelog
 
+## v0.2.5 (2024-01-18)
+
+Fixed issue #8 with `VERSION` file.
+
+## v0.2.4 (2023-01-31)
+
+Fixed issues #1 and #2
+
 ## v0.2.3 (2022-10-17)
+
 Release for Zenodo DOI. 
 No futher code changes.
 
@@ -15,8 +24,8 @@ Minor bugfix.
 ### Changed
 
 - `utils.py`
-   - `subset_region()`:
-      - fix indexing when both minimum and maximum longitude are in between two grid nodes of loaded constituent netCDF files
+     - `subset_region()`:
+          - fix indexing when both minimum and maximum longitude are in between two grid nodes of loaded constituent netCDF files
 
 ## v0.2.1 (2022-06-02)
 
@@ -25,11 +34,11 @@ Minor bugfixes.
 ### Changed
 
 - `predict_tide.py`
-   - `read_parameter_file()`
-      - fix error after parsing single time input from command line
+     - `read_parameter_file()`
+          - fix error after parsing single time input from command line
 - `utils.py`
-   - `subset_region()`:
-      - selecting only single position
+     - `subset_region()`:
+          - selecting only single position
 
 ## v0.2.0 (2022-04-24)
 
@@ -44,16 +53,16 @@ Changed interpolation method from _cubic_ to _linear_ (according to [xarray.Data
 ### Changed
 
 - `predict_tide.py`
-   - changed default interpolation method to *linear*
-   - raise `MemoryError` if interpolated tide array is too huge to allocate
-   - use **only** associated timestamp for tide predition if `mode = 'track'` (more efficient!)
+     - changed default interpolation method to *linear*
+     - raise `MemoryError` if interpolated tide array is too huge to allocate
+     - use **only** associated timestamp for tide predition if `mode = 'track'` (more efficient!)
 - `utils.py`
-   - `subset_region()`:
-      - reworked indexing method
-      - changed default number of nodes to pad subset region from 10 to **3**
-   - `read_h_netCDFs()`:
-      - changed subset selection from _labeled_ (`.sel`) to _integer-based_ (`.isel`)
-      - changed default number of nodes to pad subset region from 10 to **3**
+     - `subset_region()`:
+          - reworked indexing method
+          - changed default number of nodes to pad subset region from 10 to **3**
+     - `read_h_netCDFs()`:
+          - changed subset selection from _labeled_ (`.sel`) to _integer-based_ (`.isel`)
+          - changed default number of nodes to pad subset region from 10 to **3**
 
 ## v0.1.1 (2022-02-27)
 
